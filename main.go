@@ -9,7 +9,7 @@ import (
 	"github.com/kafy11/gowsclient/client"
 )
 
-const WS_ADDRESS = "localhost:8080"
+const WS_ADDRESS = "localhost:8080?id=1"
 
 func main() {
 	test := flag.Bool("t", false, "Testar conexão")

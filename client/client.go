@@ -47,7 +47,7 @@ func Test(address string) {
 }
 
 func connect(address string) *websocket.Conn {
-	ws, err := websocket.Dial(fmt.Sprintf("ws://%s?id=1", address), "", fmt.Sprintf("http://%s?id=1", address))
+	ws, err := websocket.Dial(fmt.Sprintf("ws://%s", address), "", fmt.Sprintf("http://%s", address))
 
 	if err != nil {
 		fmt.Printf("Falha ao conectar: %s\n", err.Error())
