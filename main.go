@@ -17,7 +17,7 @@ func main() {
 
 	if *test {
 		client.Test(WS_ADDRESS)
-		fmt.Println("Sucesso ao conectar!")
+		fmt.Println("Sucesso ao conectar")
 		os.Exit(0)
 	}
 
