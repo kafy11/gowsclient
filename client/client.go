@@ -23,12 +23,7 @@ type MessageReceived struct {
 type MessageHandlerFunction func(*MessageReceived) *MessageToSent
 
 func Start(address string, messageHandler MessageHandlerFunction) {
-	ws, err := websocket.Dial(fmt.Sprintf("ws://%s?id=1", address), "", fmt.Sprintf("http://%s?id=1", address))
-
-	if err != nil {
-		fmt.Printf("Dial failed: %s\n", err.Error())
-		os.Exit(1)
-	}
+	ws := connect(address)
 
 	messageChannel := make(chan *MessageReceived)
 	go readMessages(ws, messageChannel)
@@ -38,13 +33,28 @@ func Start(address string, messageHandler MessageHandlerFunction) {
 		case message := <-messageChannel:
 			fmt.Println(`Message Received:`, message)
 
-			err = websocket.JSON.Send(ws, messageHandler(message))
+			err := websocket.JSON.Send(ws, messageHandler(message))
 			if err != nil {
 				fmt.Printf("Send failed: %s\n", err.Error())
 				os.Exit(1)
 			}
 		}
 	}
+}
+
+func Test(address string) {
+	connect(address)
+}
+
+func connect(address string) *websocket.Conn {
+	ws, err := websocket.Dial(fmt.Sprintf("ws://%s?id=1", address), "", fmt.Sprintf("http://%s?id=1", address))
+
+	if err != nil {
+		fmt.Printf("Falha ao conectar: %s\n", err.Error())
+		os.Exit(1)
+	}
+
+	return ws
 }
 
 func readMessages(ws *websocket.Conn, incomingMessages chan *MessageReceived) {
