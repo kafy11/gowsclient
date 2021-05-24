@@ -24,9 +24,9 @@ func main() {
 	client.Start(WS_ADDRESS, messageHandler)
 }
 
-func messageHandler(received *client.MessageReceived) *client.MessageToSent {
+func messageHandler(received *client.MessageReceived) *client.MessageToSend {
 	log.Info("Mensagem recebida")
-	return &client.MessageToSent{
+	return &client.MessageToSend{
 		Action: "teste",
 		To:     received.From,
 		Msg:    "Mensagem recebida",

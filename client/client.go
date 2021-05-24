@@ -5,24 +5,16 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/kafy11/gosocket/message"
 	"golang.org/x/net/websocket"
 )
 
-type MessageToSent struct {
-	Action string `json:"action"`
-	To     int    `json:"to"`
-	Msg    string `json:"msg"`
-}
+type MessageToSend message.Received
+type MessageReceived message.ToSend
 
-type MessageReceived struct {
-	Action string `json:"action"`
-	From   int    `json:"from"`
-	Msg    string `json:"msg"`
-}
+type Handler func(*MessageReceived) *MessageToSend
 
-type MessageHandlerFunction func(*MessageReceived) *MessageToSent
-
-func Start(address string, messageHandler MessageHandlerFunction) {
+func Start(address string, messageHandler Handler) {
 	ws := connect(address)
 
 	messageChannel := make(chan *MessageReceived)
