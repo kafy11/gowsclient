@@ -20,7 +20,12 @@ func Start(address string, messageHandler Handler) {
 		case message := <-messageChannel:
 			fmt.Println(`Message Received:`, message)
 
-			err := websocket.JSON.Send(ws, messageHandler(message))
+			msgToSend := messageHandler(message)
+			if msgToSend == nil {
+				continue
+			}
+
+			err := websocket.JSON.Send(ws, msgToSend)
 			if err != nil {
 				fmt.Printf("Send failed: %s\n", err.Error())
 				os.Exit(1)
