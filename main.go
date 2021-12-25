@@ -24,7 +24,7 @@ func main() {
 	client.Start(WS_ADDRESS, messageHandler)
 }
 
-func messageHandler(received string) string {
+func messageHandler(received string) interface{} {
 	log.Info("Mensagem recebida")
 	return "Mensagem recebida"
 }

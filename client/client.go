@@ -7,7 +7,7 @@ import (
 	"golang.org/x/net/websocket"
 )
 
-type Handler func(string) string
+type Handler func(string) interface{}
 
 func Start(address string, messageHandler Handler) {
 	ws := connect(address)
