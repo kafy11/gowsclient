@@ -9,7 +9,7 @@ import (
 	"github.com/kafy11/gowsclient/client"
 )
 
-const WS_ADDRESS = "localhost:8080?id=1"
+const WS_ADDRESS = "ws://localhost:8080?id=1"
 
 func main() {
 	test := flag.Bool("t", false, "Testar conexão")
@@ -24,11 +24,7 @@ func main() {
 	client.Start(WS_ADDRESS, messageHandler)
 }
 
-func messageHandler(received *client.MessageReceived) *client.MessageToSend {
+func messageHandler(received string) string {
 	log.Info("Mensagem recebida")
-	return &client.MessageToSend{
-		Action: "teste",
-		To:     received.From,
-		Msg:    "Mensagem recebida",
-	}
+	return "Mensagem recebida"
 }

@@ -1,23 +1,18 @@
 package client
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 
-	"github.com/kafy11/gosocket/message"
 	"golang.org/x/net/websocket"
 )
 
-type MessageToSend message.Received
-type MessageReceived message.ToSend
-
-type Handler func(*MessageReceived) *MessageToSend
+type Handler func(string) string
 
 func Start(address string, messageHandler Handler) {
 	ws := connect(address)
 
-	messageChannel := make(chan *MessageReceived)
+	messageChannel := make(chan string)
 	go readMessages(ws, messageChannel)
 
 	for {
@@ -39,7 +34,7 @@ func Test(address string) {
 }
 
 func connect(address string) *websocket.Conn {
-	ws, err := websocket.Dial(fmt.Sprintf("ws://%s", address), "", fmt.Sprintf("http://%s", address))
+	ws, err := websocket.Dial(address, "", fmt.Sprintf("http://%s", address))
 
 	if err != nil {
 		fmt.Printf("Falha ao conectar: %s\n", err.Error())
@@ -49,16 +44,14 @@ func connect(address string) *websocket.Conn {
 	return ws
 }
 
-func readMessages(ws *websocket.Conn, incomingMessages chan *MessageReceived) {
+func readMessages(ws *websocket.Conn, incomingMessages chan string) {
 	for {
-		var jsonInput string
-		err := websocket.Message.Receive(ws, &jsonInput)
+		var message string
+		err := websocket.Message.Receive(ws, &message)
 		if err != nil {
 			fmt.Printf("Error::: %s\n", err.Error())
 			return
 		}
-		message := new(MessageReceived)
-		json.Unmarshal([]byte(jsonInput), &message)
 		incomingMessages <- message
 	}
 }
