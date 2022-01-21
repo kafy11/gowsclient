@@ -7,13 +7,22 @@ import (
 	"golang.org/x/net/websocket"
 )
 
+type WsClient struct {
+	conn *websocket.Conn
+}
+
 type Handler func(string) interface{}
 
-func Start(address string, messageHandler Handler) {
-	ws := connect(address)
+func Connect(address string) *WsClient {
+	client := &WsClient{}
+	client.conn = connect(address)
 
+	return client
+}
+
+func (ws *WsClient) ListenMessages(messageHandler Handler) {
 	messageChannel := make(chan string)
-	go readMessages(ws, messageChannel)
+	go readMessages(ws.conn, messageChannel)
 
 	for {
 		select {
@@ -25,7 +34,7 @@ func Start(address string, messageHandler Handler) {
 				continue
 			}
 
-			err := websocket.JSON.Send(ws, msgToSend)
+			err := websocket.JSON.Send(ws.conn, msgToSend)
 			if err != nil {
 				fmt.Printf("Send failed: %s\n", err.Error())
 				os.Exit(1)
@@ -59,4 +68,13 @@ func readMessages(ws *websocket.Conn, incomingMessages chan string) {
 		}
 		incomingMessages <- message
 	}
+}
+
+func (ws *WsClient) Send(message interface{}) error {
+	err := websocket.JSON.Send(ws.conn, message)
+	if err != nil {
+		fmt.Printf("Send failed: %s\n", err.Error())
+		return err
+	}
+	return nil
 }

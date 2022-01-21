@@ -20,8 +20,6 @@ func main() {
 		fmt.Println("Sucesso ao conectar")
 		os.Exit(0)
 	}
-
-	client.Start(WS_ADDRESS, messageHandler)
 }
 
 func messageHandler(received string) interface{} {
