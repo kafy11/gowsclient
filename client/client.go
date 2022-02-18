@@ -20,9 +20,10 @@ func Connect(address string) *WsClient {
 	return client
 }
 
-func (ws *WsClient) ListenMessages(messageHandler Handler) {
+func (ws *WsClient) ListenMessages(messageHandler Handler) error {
 	messageChannel := make(chan string)
-	go readMessages(ws.conn, messageChannel)
+	errChannel := make(chan error)
+	go readMessages(ws.conn, messageChannel, errChannel)
 
 	for {
 		select {
@@ -39,6 +40,9 @@ func (ws *WsClient) ListenMessages(messageHandler Handler) {
 				fmt.Printf("Send failed: %s\n", err.Error())
 				os.Exit(1)
 			}
+
+		case err := <-errChannel:
+			return err
 		}
 	}
 }
@@ -58,12 +62,12 @@ func connect(address string) *websocket.Conn {
 	return ws
 }
 
-func readMessages(ws *websocket.Conn, incomingMessages chan string) {
+func readMessages(ws *websocket.Conn, incomingMessages chan string, errChannel chan error) {
 	for {
 		var message string
 		err := websocket.Message.Receive(ws, &message)
 		if err != nil {
-			fmt.Printf("Error::: %s\n", err.Error())
+			errChannel <- err
 			return
 		}
 		incomingMessages <- message
