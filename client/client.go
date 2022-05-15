@@ -1,6 +1,7 @@
 package client
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -11,7 +12,7 @@ type WsClient struct {
 	conn *websocket.Conn
 }
 
-type Handler func(string) interface{}
+type Handler func(string)
 
 func Connect(address string) *WsClient {
 	client := &WsClient{}
@@ -29,17 +30,7 @@ func (ws *WsClient) ListenMessages(messageHandler Handler) error {
 		select {
 		case message := <-messageChannel:
 			fmt.Println(`Message Received:`, message)
-
-			msgToSend := messageHandler(message)
-			if msgToSend == nil {
-				continue
-			}
-
-			err := websocket.JSON.Send(ws.conn, msgToSend)
-			if err != nil {
-				fmt.Printf("Send failed: %s\n", err.Error())
-				os.Exit(1)
-			}
+			go messageHandler(message)
 
 		case err := <-errChannel:
 			return err
@@ -75,6 +66,10 @@ func readMessages(ws *websocket.Conn, incomingMessages chan string, errChannel c
 }
 
 func (ws *WsClient) Send(message interface{}) error {
+	if ws.conn == nil {
+		return errors.New("failed to send message because websocket is not connected")
+	}
+
 	err := websocket.JSON.Send(ws.conn, message)
 	if err != nil {
 		fmt.Printf("Send failed: %s\n", err.Error())
