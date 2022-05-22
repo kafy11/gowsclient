@@ -1,7 +1,6 @@
 package client
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"sync"
@@ -78,10 +77,6 @@ func (client *WsClient) Send(message interface{}) error {
 	//cria um lock de leitura
 	client.m.RLock()
 	defer client.m.RUnlock() //defer para desbloquear o lock no final da função
-
-	if client.conn == nil {
-		return errors.New("failed to send message because websocket is not connected")
-	}
 
 	err := websocket.JSON.Send(client.conn, message)
 	if err != nil {
