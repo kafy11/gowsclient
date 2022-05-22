@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/kafy11/gosocket/log"
 	"github.com/kafy11/gowsclient/client"
 )
 
@@ -16,13 +15,8 @@ func main() {
 	flag.Parse()
 
 	if *test {
-		client.Test(WS_ADDRESS)
+		client.Connect(WS_ADDRESS)
 		fmt.Println("Sucesso ao conectar")
 		os.Exit(0)
 	}
-}
-
-func messageHandler(received string) interface{} {
-	log.Info("Mensagem recebida")
-	return "Mensagem recebida"
 }
