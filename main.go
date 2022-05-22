@@ -15,7 +15,7 @@ func main() {
 	flag.Parse()
 
 	if *test {
-		client.Connect(WS_ADDRESS)
+		client.New(WS_ADDRESS).Connect()
 		fmt.Println("Sucesso ao conectar")
 		os.Exit(0)
 	}
