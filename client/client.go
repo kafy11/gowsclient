@@ -2,7 +2,6 @@ package client
 
 import (
 	"fmt"
-	"os"
 	"sync"
 
 	"golang.org/x/net/websocket"
@@ -28,7 +27,6 @@ func (client *WsClient) ListenMessages(messageHandler Handler) error {
 	for {
 		select {
 		case message := <-messageChannel:
-			fmt.Println(`Message Received:`, message)
 			go messageHandler(message)
 
 		case err := <-errChannel:
@@ -37,7 +35,7 @@ func (client *WsClient) ListenMessages(messageHandler Handler) error {
 	}
 }
 
-func (client *WsClient) Connect() {
+func (client *WsClient) Connect() error {
 	//locka para bloquear leituras na variável enquanto estiver tentando conectar
 	client.m.Lock()
 	defer client.m.Unlock() //defer para desbloqueiar a variável no final da função
@@ -45,11 +43,11 @@ func (client *WsClient) Connect() {
 	ws, err := websocket.Dial(client.address, "", fmt.Sprintf("http://%s", client.address))
 
 	if err != nil {
-		fmt.Printf("Falha ao conectar: %s\n", err.Error())
-		os.Exit(1)
+		return err
 	}
 
 	client.conn = ws
+	return nil
 }
 
 func readMessages(client *WsClient, incomingMessages chan string, errChannel chan error) {
@@ -80,7 +78,6 @@ func (client *WsClient) Send(message interface{}) error {
 
 	err := websocket.JSON.Send(client.conn, message)
 	if err != nil {
-		fmt.Printf("Send failed: %s\n", err.Error())
 		return err
 	}
 	return nil
