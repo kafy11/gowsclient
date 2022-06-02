@@ -1,6 +1,8 @@
 package client
 
 import (
+	"crypto/tls"
+	"encoding/base64"
 	"fmt"
 	"sync"
 
@@ -8,15 +10,53 @@ import (
 )
 
 type WsClient struct {
-	address string
-	conn    *websocket.Conn
-	m       sync.RWMutex
+	config *websocket.Config
+	conn   *websocket.Conn
+	m      sync.RWMutex
+}
+
+type WsClientParams struct {
+	SSL      bool
+	URL      string
+	Headers  map[string]string
+	User     string
+	Password string
 }
 
 type Handler func(string)
 
-func New(address string) *WsClient {
-	return &WsClient{address: address}
+func New(params *WsClientParams) (*WsClient, error) {
+	var origin, endpoint string
+	if params.SSL {
+		origin = fmt.Sprintf("https://%s", params.URL)
+		endpoint = fmt.Sprintf("wss://%s", params.URL)
+	} else {
+		origin = fmt.Sprintf("http://%s", params.URL)
+		endpoint = fmt.Sprintf("ws://%s", params.URL)
+	}
+
+	config, err := websocket.NewConfig(endpoint, origin)
+	if err != nil {
+		return nil, err
+	}
+
+	if params.SSL {
+		config.TlsConfig = &tls.Config{
+			InsecureSkipVerify: true,
+		}
+	}
+
+	for key, value := range params.Headers {
+		config.Header.Add(key, value)
+	}
+
+	if params.User != "" && params.Password != "" {
+		auth := fmt.Sprintf("%s:%s", params.User, params.Password)
+		auth_encoded := base64.StdEncoding.EncodeToString([]byte(auth))
+		config.Header.Add("Authorization", fmt.Sprintf("Basic %s", auth_encoded))
+	}
+
+	return &WsClient{config: config}, nil
 }
 
 func (client *WsClient) ListenMessages(messageHandler Handler) error {
@@ -40,8 +80,7 @@ func (client *WsClient) Connect() error {
 	client.m.Lock()
 	defer client.m.Unlock() //defer para desbloqueiar a variável no final da função
 
-	ws, err := websocket.Dial(client.address, "", fmt.Sprintf("http://%s", client.address))
-
+	ws, err := websocket.DialConfig(client.config)
 	if err != nil {
 		return err
 	}
