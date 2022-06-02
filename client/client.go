@@ -38,8 +38,8 @@ func New(params *WsClientParams) (*WsClient, error) {
 	if params.User != "" && params.Password != "" {
 		auth := fmt.Sprintf("%s:%s", params.User, params.Password)
 		auth_encoded := base64.StdEncoding.EncodeToString([]byte(auth))
-		origin = fmt.Sprintf("%s?authorization=%s", origin, auth_encoded)
-		endpoint = fmt.Sprintf("%s?authorization=%s", endpoint, auth_encoded)
+		origin = fmt.Sprintf("%s?id=0&authorization=%s", origin, auth_encoded)
+		endpoint = fmt.Sprintf("%s?id=0&authorization=%s", endpoint, auth_encoded)
 	}
 
 	config, err := websocket.NewConfig(endpoint, origin)
