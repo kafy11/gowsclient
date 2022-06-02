@@ -35,6 +35,13 @@ func New(params *WsClientParams) (*WsClient, error) {
 		endpoint = fmt.Sprintf("ws://%s", params.URL)
 	}
 
+	if params.User != "" && params.Password != "" {
+		auth := fmt.Sprintf("%s:%s", params.User, params.Password)
+		auth_encoded := base64.StdEncoding.EncodeToString([]byte(auth))
+		origin = fmt.Sprintf("%s?authorization=%s", origin, auth_encoded)
+		endpoint = fmt.Sprintf("%s?authorization=%s", endpoint, auth_encoded)
+	}
+
 	config, err := websocket.NewConfig(endpoint, origin)
 	if err != nil {
 		return nil, err
@@ -48,12 +55,6 @@ func New(params *WsClientParams) (*WsClient, error) {
 
 	for key, value := range params.Headers {
 		config.Header.Add(key, value)
-	}
-
-	if params.User != "" && params.Password != "" {
-		auth := fmt.Sprintf("%s:%s", params.User, params.Password)
-		auth_encoded := base64.StdEncoding.EncodeToString([]byte(auth))
-		config.Header.Add("Authorization", fmt.Sprintf("Basic %s", auth_encoded))
 	}
 
 	return &WsClient{config: config}, nil
