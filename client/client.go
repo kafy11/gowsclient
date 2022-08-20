@@ -4,21 +4,24 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"fmt"
+	"net/http"
 	"sync"
 
-	"golang.org/x/net/websocket"
+	"github.com/gorilla/websocket"
 )
 
 type WsClient struct {
-	config *websocket.Config
-	conn   *websocket.Conn
-	m      sync.RWMutex
+	dialer  *websocket.Dialer
+	headers http.Header
+	url     string
+	conn    *websocket.Conn
+	m       sync.RWMutex
 }
 
 type WsClientParams struct {
 	SSL      bool
 	URL      string
-	Headers  map[string]string
+	Headers  http.Header
 	User     string
 	Password string
 }
@@ -26,38 +29,31 @@ type WsClientParams struct {
 type Handler func(string)
 
 func New(params *WsClientParams) (*WsClient, error) {
-	var origin, endpoint string
+	var endpoint string
 	if params.SSL {
-		origin = fmt.Sprintf("https://%s", params.URL)
 		endpoint = fmt.Sprintf("wss://%s", params.URL)
 	} else {
-		origin = fmt.Sprintf("http://%s", params.URL)
 		endpoint = fmt.Sprintf("ws://%s", params.URL)
 	}
 
 	if params.User != "" && params.Password != "" {
 		auth := fmt.Sprintf("%s:%s", params.User, params.Password)
 		auth_encoded := base64.StdEncoding.EncodeToString([]byte(auth))
-		origin = fmt.Sprintf("%s?id=0&authorization=%s", origin, auth_encoded)
 		endpoint = fmt.Sprintf("%s?id=0&authorization=%s", endpoint, auth_encoded)
 	}
 
-	config, err := websocket.NewConfig(endpoint, origin)
-	if err != nil {
-		return nil, err
-	}
-
+	dialer := websocket.DefaultDialer
 	if params.SSL {
-		config.TlsConfig = &tls.Config{
+		dialer.TLSClientConfig = &tls.Config{
 			InsecureSkipVerify: true,
 		}
 	}
 
-	for key, value := range params.Headers {
-		config.Header.Add(key, value)
-	}
-
-	return &WsClient{config: config}, nil
+	return &WsClient{
+		dialer:  dialer,
+		headers: params.Headers,
+		url:     endpoint,
+	}, nil
 }
 
 func (client *WsClient) ListenMessages(messageHandler Handler) error {
@@ -81,7 +77,7 @@ func (client *WsClient) Connect() error {
 	client.m.Lock()
 	defer client.m.Unlock() //defer para desbloqueiar a variável no final da função
 
-	ws, err := websocket.DialConfig(client.config)
+	ws, _, err := client.dialer.Dial(client.url, client.headers)
 	if err != nil {
 		return err
 	}
@@ -95,8 +91,7 @@ func readMessages(client *WsClient, incomingMessages chan string, errChannel cha
 		//cria um lock de leitura
 		client.m.RLock()
 
-		var message string
-		err := websocket.Message.Receive(client.conn, &message)
+		_, message, err := client.conn.ReadMessage()
 		if err != nil {
 			errChannel <- err
 
@@ -104,7 +99,7 @@ func readMessages(client *WsClient, incomingMessages chan string, errChannel cha
 			client.m.RUnlock()
 			return
 		}
-		incomingMessages <- message
+		incomingMessages <- string(message)
 
 		//Desbloqueia a o lock de leitura
 		client.m.RUnlock()
@@ -116,7 +111,7 @@ func (client *WsClient) Send(message interface{}) error {
 	client.m.RLock()
 	defer client.m.RUnlock() //defer para desbloquear o lock no final da função
 
-	err := websocket.JSON.Send(client.conn, message)
+	err := client.conn.WriteJSON(message)
 	if err != nil {
 		return err
 	}
