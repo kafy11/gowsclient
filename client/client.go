@@ -117,3 +117,7 @@ func (client *WsClient) Send(message interface{}) error {
 	}
 	return nil
 }
+
+func (client *WsClient) Stop() error {
+	return client.conn.Close()
+}
