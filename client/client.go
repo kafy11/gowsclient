@@ -16,6 +16,7 @@ type WsClient struct {
 	url     string
 	conn    *websocket.Conn
 	m       sync.RWMutex
+	sendM   sync.Mutex
 }
 
 type WsClientParams struct {
@@ -107,9 +108,12 @@ func readMessages(client *WsClient, incomingMessages chan string, errChannel cha
 }
 
 func (client *WsClient) Send(message interface{}) error {
-	//cria um lock de leitura
+	//cria um lock de leitura na conexão
 	client.m.RLock()
 	defer client.m.RUnlock() //defer para desbloquear o lock no final da função
+
+	client.sendM.Lock() //lock para não ter envios paralelos
+	defer client.sendM.Unlock()
 
 	err := client.conn.WriteJSON(message)
 	if err != nil {
